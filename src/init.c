@@ -12,20 +12,45 @@ MODULE_LICENSE("GPL");
 
 #define HOOK_HEADS_NAME     "security_hook_heads"
 #define NETLINK_PANOPTICON  30
+#define PANOP_NL_GROUP      21
 
 /* Forward Declarations */
-static int  panop_file_open(struct file* f, const struct cred* cred);
 static void panop_nl_recv(struct sk_buff* skb);
+
+/* Externs */
+extern unsigned long get_security_hooks(struct security_hook_list** list);
 
 /* Globals */
 static struct sock* panop_sk = NULL;
 static void* hook_loc = NULL;
-static struct security_hook_list panop_hooks[] = {
-  { .head = NULL, .hook = { .file_open = panop_file_open}, },
-};
 static struct netlink_kernel_cfg panop_nl_cfg = {
   .input = panop_nl_recv,
 };
+
+/**
+ * Sends multicast message to userspace via netlink
+ **/
+void panop_send(const void* message, unsigned long size)
+{
+  struct sk_buff*  skb = NULL;
+  struct nlmsghdr* hdr = NULL;
+  int              res = 0;
+
+  if(NULL == (skb = nlmsg_new(NLMSG_ALIGN(size), GFP_KERNEL))) {
+    dbg_print("Allocation of SKB failed!");
+    return;
+  }
+
+  hdr = nlmsg_put(skb, 0, 1, NLMSG_DONE, size, 0);
+  memcpy(nlmsg_data(hdr), message, size);
+
+  if(0 > (res = nlmsg_multicast(panop_sk, skb, 0,
+                                PANOP_NL_GROUP, GFP_KERNEL))) {
+    dbg_print("Send failed! %d", res);
+    return;
+  }
+
+}
 
 static unsigned long unprotect(void)
 {
@@ -91,25 +116,33 @@ static int init_netlink(struct sock** s)
 static void set_hooks(void)
 {
   struct security_hook_heads* hook_heads = NULL;
+  struct security_hook_list*  panop_hooks = NULL;
+  unsigned long               size = 0;
 
   if(!hook_loc)
     return;
 
   hook_heads = (struct security_hook_heads*)hook_loc;
+  size = get_security_hooks(&panop_hooks);
 
   /* Initialize the entries */
   panop_hooks[0].head = &hook_heads->file_open;
 
 
-  add_hooks_to_list(panop_hooks, ARRAY_SIZE(panop_hooks));
+  add_hooks_to_list(panop_hooks, size);
 }
 
 static void clear_hooks(void)
 {
+  struct security_hook_list*  panop_hooks = NULL;
+  unsigned long               size = 0;
+
   if(!hook_loc)
     return;
 
-  rem_hooks_from_list(panop_hooks, ARRAY_SIZE(panop_hooks));
+  size = get_security_hooks(&panop_hooks);
+
+  rem_hooks_from_list(panop_hooks, size);
 }
 
 static int __init panop_init(void)
@@ -143,13 +176,6 @@ static void __exit panop_exit(void)
   dbg_print("-> Exiting module");
 }
 
-static int panop_file_open(struct file* f, const struct cred* cred)
-{
-
-  dbg_print("File Open: %s", f->f_path.dentry->d_iname);
-
-  return 0;
-}
 
 static void panop_nl_recv(struct sk_buff* skb)
 {

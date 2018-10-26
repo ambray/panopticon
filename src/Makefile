@@ -1,6 +1,6 @@
 ccflags-y := -DDBG -g
 obj-m := panop.o
-panop-objs := init.o
+panop-objs := init.o handlers.o
 
 MOD_DIR = /lib/modules/$(shell uname -r)/build
 
