@@ -8,3 +8,18 @@
 #else
 #define dbg_print(x, ...) ""
 #endif
+
+
+#define FILE_STATIC_SIZE 64
+#define JSON_BEGIN_PREFIX   "{\"type\":\""
+#define JSON_END_PREFIX     "\","
+#define JSON_SUFFIX         "}"
+#define JSON_INT_PAIR       "\"%s\":%u"
+#define JSON_STR_PAIR       "\"%s\":\"%s\""
+#define STATIC_SIZE  64
+#define FILE_OPEN    "file_open"
+#define UID_KEY      "uid"
+#define GID_KEY      "gid"
+#define PATH_KEY     "path"
+#define MODE_KEY     "mode"
+#define FLAGS_KEY    "flags"
