@@ -62,7 +62,8 @@ static int marshal_file(const char* type, char** buf, unsigned int* outsize,
   char* path_buf = NULL;
   char* path_scratch = NULL;
   char* p = NULL;
-  unsigned int size = strlen(type) + STATIC_SIZE + FILE_STATIC_SIZE;
+  unsigned int size = strlen(type) + STATIC_SIZE + FILE_STATIC_SIZE
+    + sizeof(JSON_UL_PAIR);
   unsigned int offset = 0;
   unsigned int psize = 0;
   int          tmp = 0;
@@ -94,6 +95,11 @@ static int marshal_file(const char* type, char** buf, unsigned int* outsize,
   offset += tmp;
   *(p + offset) = ',';
   offset++;
+  tmp = snprintf(p + offset, size - offset, JSON_UL_PAIR, INODE_KEY,
+                 f->f_inode->i_ino);
+  offset += tmp;
+  *(p + offset) = ',';
+  offset++;
   tmp = snprintf(p + offset, size - offset, JSON_STR_PAIR, PATH_KEY, path_buf);
   offset += tmp;
   strcpy(p + offset, JSON_SUFFIX);
@@ -119,9 +125,7 @@ static int panop_file_open(struct file* f, const struct cred* cred)
     goto cleanup;
   }
 
-  dbg_print("Full path: %s", p);
   panop_send(p, size);
-
 cleanup:
   if(p)
     kfree(p);

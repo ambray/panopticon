@@ -16,6 +16,7 @@
 #define JSON_SUFFIX         "}"
 #define JSON_INT_PAIR       "\"%s\":%u"
 #define JSON_STR_PAIR       "\"%s\":\"%s\""
+#define JSON_UL_PAIR        "\"%s\":%lu"
 #define STATIC_SIZE  64
 #define FILE_OPEN    "file_open"
 #define UID_KEY      "uid"
@@ -23,3 +24,4 @@
 #define PATH_KEY     "path"
 #define MODE_KEY     "mode"
 #define FLAGS_KEY    "flags"
+#define INODE_KEY    "inode"
