@@ -18,10 +18,12 @@
 #define JSON_STR_PAIR       "\"%s\":\"%s\""
 #define JSON_UL_PAIR        "\"%s\":%lu"
 #define STATIC_SIZE  64
-#define FILE_OPEN    "file_open"
 #define UID_KEY      "uid"
 #define GID_KEY      "gid"
 #define PATH_KEY     "path"
 #define MODE_KEY     "mode"
 #define FLAGS_KEY    "flags"
 #define INODE_KEY    "inode"
+#define FILE_OPEN    "file_open"
+#define FILE_RECV    "file_recv"
+#define FILE_OWNER   "file_set_fowner"
