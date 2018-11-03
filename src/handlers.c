@@ -9,15 +9,29 @@ extern void panop_send(const void* message, unsigned long size);
 
 /* Forward Declarations */
 static int  panop_file_open(struct file* f, const struct cred* cred);
+static int panop_file_recv(struct file* f);
+static void panop_file_set_owner(struct file* f);
 
 /* Globals */
 static struct security_hook_list panop_hooks[] = {
   { .head = NULL, .hook = { .file_open = panop_file_open}, },
+  { .head = NULL, .hook = { .file_receive = panop_file_recv}, },
+  { .head = NULL, .hook = { .file_set_fowner = panop_file_set_owner}, },
 };
 
-unsigned long get_security_hooks(struct security_hook_list** list)
+
+unsigned long get_security_hooks(struct security_hook_list** list,
+                                 struct security_hook_heads* heads)
 {
+  if(heads) {
+    /* Initialize the entries */
+    panop_hooks[0].head = &heads->file_open;
+    panop_hooks[1].head = &heads->file_receive;
+    panop_hooks[2].head = &heads->file_set_fowner;
+  }
+
   *list = panop_hooks;
+
   return ARRAY_SIZE(panop_hooks);
 }
 
@@ -131,4 +145,38 @@ cleanup:
     kfree(p);
 
   return 0;
+}
+
+static int panop_file_recv(struct file* f)
+{
+  char* p = NULL;
+  unsigned int size = 0;
+
+  if(0 != marshal_file(FILE_RECV, &p, &size, f,
+                       current_uid().val, current_gid().val)) {
+    dbg_print("Marshal for recv failed!");
+    return 0;
+  }
+
+  panop_send(p, size);
+  kfree(p);
+
+  return 0;
+}
+
+static void panop_file_set_owner(struct file* f)
+{
+  char* p = NULL;
+  unsigned int size = 0;
+
+  if(0 != marshal_file(FILE_OWNER, &p, &size, f,
+                       current_uid().val, current_gid().val)) {
+    dbg_print("Marshal for set owner failed!");
+    return;
+  }
+
+  panop_send(p, size);
+  kfree(p);
+
+  return;
 }

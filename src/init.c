@@ -18,7 +18,8 @@ MODULE_LICENSE("GPL");
 static void panop_nl_recv(struct sk_buff* skb);
 
 /* Externs */
-extern unsigned long get_security_hooks(struct security_hook_list** list);
+extern unsigned long get_security_hooks(struct security_hook_list** list,
+                                        struct security_hook_heads* heads);
 
 /* Globals */
 static struct sock* panop_sk = NULL;
@@ -46,7 +47,9 @@ void panop_send(const void* message, unsigned long size)
 
   if(0 > (res = nlmsg_multicast(panop_sk, skb, 0,
                                 PANOP_NL_GROUP, GFP_KERNEL))) {
-    dbg_print("Send failed! %d", res);
+    if(res != -3) {
+      dbg_print("Send failed! %d", res);
+    }
     return;
   }
 
@@ -123,10 +126,7 @@ static void set_hooks(void)
     return;
 
   hook_heads = (struct security_hook_heads*)hook_loc;
-  size = get_security_hooks(&panop_hooks);
-
-  /* Initialize the entries */
-  panop_hooks[0].head = &hook_heads->file_open;
+  size = get_security_hooks(&panop_hooks, hook_heads);
 
 
   add_hooks_to_list(panop_hooks, size);
@@ -140,7 +140,7 @@ static void clear_hooks(void)
   if(!hook_loc)
     return;
 
-  size = get_security_hooks(&panop_hooks);
+  size = get_security_hooks(&panop_hooks, NULL);
 
   rem_hooks_from_list(panop_hooks, size);
 }
